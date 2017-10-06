@@ -17,12 +17,18 @@ import java.util.List;
 
 public class ImageAdapater extends RecyclerView.Adapter<ImageAdapater.ViewHolder> {
 
+    public interface OnClick {
+        void onClick(Photo photo);
+    }
+
     private Context mContext;
     private List<Photo> mData;
+    private OnClick mOnClick;
 
-    public ImageAdapater(Context context, List<Photo> data) {
+    public ImageAdapater(Context context, List<Photo> data, OnClick onClick) {
         this.mContext = context;
         this.mData = data;
+        this.mOnClick = onClick;
     }
 
     @Override
@@ -33,8 +39,12 @@ public class ImageAdapater extends RecyclerView.Adapter<ImageAdapater.ViewHolder
 
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
-        Photo photo = mData.get(position);
+        final Photo photo = mData.get(position);
         Picasso.with(mContext).load(photo.url_l).into(holder.mImageView);
+
+        holder.mImageView.setOnClickListener((view) -> {
+            mOnClick.onClick(photo);
+        });
     }
 
     @Override
