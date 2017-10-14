@@ -5,29 +5,50 @@ import android.arch.lifecycle.ViewModel;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.schedulers.Schedulers;
+import retrofit2.Retrofit;
+import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
+import retrofit2.converter.gson.GsonConverterFactory;
+import timber.log.Timber;
+
 /**
  * Created by anguruso on 6/10/2017.
  */
 
 public class ImageListViewModel extends ViewModel {
 
+    private FlickService flickService;
+
     interface OnComplete {
-        public void onComplete();
+        void onComplete();
+    }
+
+    public ImageListViewModel()
+    {
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl("https://api.flickr.com/")
+                .addConverterFactory(GsonConverterFactory.create())
+                .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
+                .build();
+
+        flickService = retrofit.create(FlickService.class);
     }
 
     public List<Photo> mImageList = new ArrayList<>();
 
     public void getImages(OnComplete onComplete)
     {
-        // Put images into the list
-        mImageList.add(createDummyPhoto("https://i.pinimg.com/736x/7e/a4/e4/7ea4e4e721344aec6d0cac99790ca0fc--octopus-costume-octopus-art.jpg"));
-        mImageList.add(createDummyPhoto("http://kids.nationalgeographic.com/content/dam/kids/photos/articles/Nature/H-P/octopus-photos-rambo.ngsversion.1436387382745.adapt.1900.1.jpg"));
-        mImageList.add(createDummyPhoto("https://i.pinimg.com/736x/cc/3e/2a/cc3e2adfda62bb7d2efdc136beffbaea--octopus-painting-octopus-art.jpg"));
-        mImageList.add(createDummyPhoto("https://i.ytimg.com/vi/rX-YiYHahoo/maxresdefault.jpg"));
-        mImageList.add(createDummyPhoto("https://i.ytimg.com/vi/epbJi35lzEs/maxresdefault.jpg"));
-
-        // Call onComplete
-        onComplete.onComplete();
+        flickService.listPhotos("949e98778755d1982f537d56236bbb42", "octopus")
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe((flickrResponse) -> {
+                    mImageList.addAll(flickrResponse.photos.photo);
+                    onComplete.onComplete();
+                }, (exception) -> {
+                    Timber.e(exception, "Failed to get octopuses from Flickr");
+                    onComplete.onComplete();
+                });
     }
 
     public Photo createDummyPhoto(String urlLarge) {
