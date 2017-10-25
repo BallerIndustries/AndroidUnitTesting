@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.annotations.NonNull;
+import io.reactivex.functions.Consumer;
 import io.reactivex.schedulers.Schedulers;
 import retrofit2.Retrofit;
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
@@ -18,7 +20,7 @@ import timber.log.Timber;
 
 public class ImageListViewModel extends ViewModel {
 
-    private FlickService flickService;
+    private FlickApi flickApi;
 
     interface OnComplete {
         void onComplete();
@@ -32,23 +34,38 @@ public class ImageListViewModel extends ViewModel {
                 .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
                 .build();
 
-        flickService = retrofit.create(FlickService.class);
+        flickApi = retrofit.create(FlickApi.class);
     }
 
     public List<Photo> mImageList = new ArrayList<>();
 
-    public void getImages(OnComplete onComplete)
+    public void getImages(final OnComplete onComplete)
     {
-        flickService.listPhotos("949e98778755d1982f537d56236bbb42", "octopus")
+        flickApi.listPhotos("949e98778755d1982f537d56236bbb42", "octopus")
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe((flickrResponse) -> {
-                    mImageList.addAll(flickrResponse.photos.photo);
-                    onComplete.onComplete();
-                }, (exception) -> {
-                    Timber.e(exception, "Failed to get octopuses from Flickr");
-                    onComplete.onComplete();
+                .subscribe(new Consumer<FlickrPhotosSearchResponse>() {
+                    @Override
+                    public void accept(@NonNull FlickrPhotosSearchResponse flickrPhotosSearchResponse) throws Exception {
+                        mImageList.addAll(flickrPhotosSearchResponse.photos.photo);
+                        onComplete.onComplete();
+                    }
+                }, new Consumer<Throwable>() {
+                    @Override
+                    public void accept(@NonNull Throwable throwable) throws Exception {
+                        Timber.e(throwable, "Failed to get octopuses from Flickr");
+                        onComplete.onComplete();
+                    }
                 });
+
+
+//                .subscribe((flickrResponse) -> {
+//                    mImageList.addAll(flickrResponse.photos.photo);
+//                    onComplete.onComplete();
+//                }, (exception) -> {
+//                    Timber.e(exception, "Failed to get octopuses from Flickr");
+//                    onComplete.onComplete();
+//                });
     }
 
     public Photo createDummyPhoto(String urlLarge) {

@@ -42,8 +42,15 @@ public class ImageAdapater extends RecyclerView.Adapter<ImageAdapater.ViewHolder
         final Photo photo = mData.get(position);
         Picasso.with(mContext).load(photo.url_l).into(holder.mImageView);
 
-        holder.mImageView.setOnClickListener((view) -> {
-            mOnClick.onClick(photo);
+//        holder.mImageView.setOnClickListener((view) -> {
+//            mOnClick.onClick(photo);
+//        });
+
+        holder.mImageView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mOnClick.onClick(photo);
+            }
         });
     }
 
